@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.6"
+        android:scaleY="0.6"
+        android:translateX="21.6"
+        android:translateY="21.6">
+        <!-- Ticket Badge Background -->
+        <path
+            android:fillColor="#00F0FF"
+            android:pathData="M18,10 L90,10 C94.4,10 98,13.6 98,18 L98,44 C92.5,44 88,48.5 88,54 C88,59.5 92.5,64 98,64 L98,90 C98,94.4 94.4,98 90,98 L18,98 C13.6,98 10,94.4 10,90 L10,64 C15.5,64 20,59.5 20,54 C20,48.5 15.5,44 10,44 L10,18 C10,13.6 13.6,10 18,10 Z" />
+        <!-- Inner Card -->
+        <path
+            android:fillColor="#0B132B"
+            android:pathData="M24,20 L84,20 C86.2,20 88,21.8 88,24 L88,84 C88,86.2 86.2,88 84,88 L24,88 C21.8,88 20,86.2 20,84 L20,24 C20,21.8 21.8,20 24,20 Z" />
+        <!-- Queue 'Q' and Bolt Symbol -->
+        <path
+            android:fillColor="#00F0FF"
+            android:pathData="M54,28 C41.8,28 32,37.8 32,50 C32,62.2 41.8,72 54,72 C59.2,72 63.9,70.2 67.7,67.2 L74,73.5 C75.2,74.7 77.1,74.7 78.3,73.5 C79.5,72.3 79.5,70.4 78.3,69.2 L72.2,63.1 C74.6,59.4 76,54.9 76,50 C76,37.8 66.2,28 54,28 Z M54,64 C46.3,64 40,57.7 40,50 C40,42.3 46.3,36 54,36 C61.7,36 68,42.3 68,50 C68,57.7 61.7,64 54,64 Z" />
+        <!-- Live Dot / Lightning Center -->
+        <path
+            android:fillColor="#7000FF"
+            android:pathData="M51,42 L47,51 L53,51 L49,58 L57,48 L52,48 Z" />
+    </group>
+</vector>

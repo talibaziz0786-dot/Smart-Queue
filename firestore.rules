@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isBusinessOwner(businessId) {
+      return isAuthenticated() &&
+        exists(/databases/$(database)/documents/businesses/$(businessId)) &&
+        request.auth.uid == get(/databases/$(database)/documents/businesses/$(businessId)).data.ownerId;
+    }
+
+    function isPlatformAdmin() {
+      return isAuthenticated() &&
+        (request.auth.token.email == 'talibaziz0786@gmail.com' ||
+         request.auth.token.email == 'admin@smartqueue.in' ||
+         request.auth.token.admin == true);
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isPlatformAdmin();
+      allow create: if isOwner(userId) &&
+        request.resource.data.role in ['USER', 'MERCHANT', 'CUSTOMER', 'BUSINESS_OWNER'] &&
+        request.resource.data.role != 'ADMIN' &&
+        request.resource.data.role != 'SUPER_ADMIN';
+      allow update: if (isOwner(userId) &&
+        (request.resource.data.role == resource.data.role ||
+         (resource.data.role in ['USER', 'CUSTOMER'] && request.resource.data.role in ['USER', 'CUSTOMER', 'MERCHANT', 'BUSINESS_OWNER']))) || isPlatformAdmin();
+      allow delete: if isPlatformAdmin();
+    }
+
+    // --- Businesses Collection ---
+    match /businesses/{businessId} {
+      allow read: if true;
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerId == request.auth.uid &&
+        request.resource.data.id == businessId;
+      allow update: if isBusinessOwner(businessId) || isPlatformAdmin();
+      allow delete: if isBusinessOwner(businessId) || isPlatformAdmin();
+    }
+
+    // --- Locations / Branches Collection ---
+    match /locations/{locationId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isBusinessOwner(request.resource.data.businessId);
+      allow update, delete: if isAuthenticated() && isBusinessOwner(resource.data.businessId);
+    }
+
+    // --- Services Collection ---
+    match /services/{serviceId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isBusinessOwner(request.resource.data.businessId);
+      allow update, delete: if isAuthenticated() && isBusinessOwner(resource.data.businessId);
+    }
+
+    // --- QR Codes Collection ---
+    match /qrCodes/{qrCodeId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && isBusinessOwner(request.resource.data.businessId);
+      allow update, delete: if isAuthenticated() && isBusinessOwner(resource.data.businessId);
+    }
+
+    // --- Tokens / Queue Collection ---
+    match /tokens/{tokenId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid ||
+         resource.data.businessOwnerId == request.auth.uid ||
+         isBusinessOwner(resource.data.businessId) ||
+         isPlatformAdmin());
+
+      // Customer join queue: must start with WAITING and link to caller
+      allow create: if isAuthenticated() &&
+        (request.resource.data.userId == request.auth.uid || request.resource.data.isGuest == true) &&
+        request.resource.data.status == 'WAITING' &&
+        request.resource.data.businessId != null &&
+        request.resource.data.locationId != null;
+
+      // Customer can cancel own token; Merchant/Staff can call, serve, complete, skip, record no-show
+      allow update: if isAuthenticated() && (
+        // Customer cancelling own token
+        (resource.data.userId == request.auth.uid &&
+         request.resource.data.status == 'CANCELLED' &&
+         resource.data.status in ['WAITING', 'CALLED']) ||
+        // Merchant/Staff operating counter - enforcing valid state transitions
+        ((resource.data.businessOwnerId == request.auth.uid || isBusinessOwner(resource.data.businessId) || isPlatformAdmin()) &&
+         request.resource.data.tokenNumber == resource.data.tokenNumber &&
+         request.resource.data.userId == resource.data.userId &&
+         ((resource.data.status == 'WAITING' && request.resource.data.status in ['CALLED', 'CANCELLED', 'SKIPPED']) ||
+          (resource.data.status == 'CALLED' && request.resource.data.status in ['SERVING', 'SKIPPED', 'NO_SHOW', 'CANCELLED']) ||
+          (resource.data.status == 'SERVING' && request.resource.data.status in ['SERVED', 'CANCELLED']) ||
+          (resource.data.status == request.resource.data.status)))
+      );
+
+      allow delete: if resource.data.businessOwnerId == request.auth.uid || isBusinessOwner(resource.data.businessId) || isPlatformAdmin();
+    }
+
+    // --- Queue Sequence Counters ---
+    match /queueCounters/{counterId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    // --- Notifications Collection ---
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() &&
+        (resource.data.userId == request.auth.uid || isPlatformAdmin());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Audit Logs Collection ---
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isPlatformAdmin();
+    }
+  }
+}
